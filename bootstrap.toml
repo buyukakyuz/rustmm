@@ -1,0 +1,28 @@
+change-id = "ignore"
+
+[llvm]
+download-ci-llvm = true
+assertions = false
+optimize = true
+
+[build]
+dist-stage = 1
+extended = false
+verbose = 1
+metrics = true
+print-step-timings = true
+locked-deps = true
+vendor = true
+
+[rust]
+optimize = true
+debug = false
+lto = "thin-local"
+codegen-units = 16
+debug-assertions = false
+optimized-compiler-builtins = true
+
+[dist]
+compression-profile = "balanced"
+compression-formats = ["gz", "xz"]
+src-tarball = true
