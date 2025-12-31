@@ -3,7 +3,6 @@ change-id = "ignore"
 [llvm]
 download-ci-llvm = true
 assertions = false
-optimize = true
 
 [build]
 dist-stage = 1
