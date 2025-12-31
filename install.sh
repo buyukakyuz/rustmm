@@ -35,6 +35,10 @@ done
 
 PREFIX="${PREFIX/#\~/$HOME}"
 
+if [[ "$PREFIX" != /* ]]; then
+    PREFIX="$(cd "$(dirname "$PREFIX")" && pwd)/$(basename "$PREFIX")"
+fi
+
 echo "Rust-- Compiler Installer"
 echo ""
 echo "Repository: $REPO"
