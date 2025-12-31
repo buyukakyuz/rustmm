@@ -20,7 +20,6 @@ debug = false
 lto = "thin-local"
 codegen-units = 16
 debug-assertions = false
-optimized-compiler-builtins = true
 
 [dist]
 compression-profile = "balanced"
