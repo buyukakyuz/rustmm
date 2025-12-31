@@ -4,7 +4,7 @@ set -e
 
 REPO="buyukakyuz/rustmm"
 VERSION="latest"
-PREFIX="$HOME/.rust-fork"
+PREFIX="$HOME/.rustmm"
 
 while [[ $# -gt 0 ]]; do
     case $1 in

@@ -12,16 +12,16 @@ Pre-built binaries are available for macOS (aarch64). Linux x86_64 coming soon.
 curl -O https://raw.githubusercontent.com/buyukakyuz/rustmm/main/install.sh
 chmod +x install.sh
 
-# Install (default: ~/.rust-fork)
+# Install (default: ~/.rustmm)
 ./install.sh
 
 # Or specify custom location
-./install.sh --prefix=/opt/rust-fork
+./install.sh --prefix=/opt/rustmm
 ```
 
 Use your new compiler:
 ```bash
-~/.rust-fork/bin/rustc your_code.rs
+~/.rustmm/bin/rustc your_code.rs
 ```
 
 **Note:** CI/CD builds take a very long time, so pre-built binaries are built locally and released as they become available. Check [releases](https://github.com/buyukakyuz/rustmm/releases) for available versions.
