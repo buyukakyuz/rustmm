@@ -1,77 +1,218 @@
-<div align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/rust-lang/www.rust-lang.org/master/static/images/rust-social-wide-dark.svg">
-    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/rust-lang/www.rust-lang.org/master/static/images/rust-social-wide-light.svg">
-    <img alt="The Rust Programming Language: A language empowering everyone to build reliable and efficient software"
-         src="https://raw.githubusercontent.com/rust-lang/www.rust-lang.org/master/static/images/rust-social-wide-light.svg"
-         width="50%">
-  </picture>
+# Rust--: Rust without the borrow checker
 
-[Website][Rust] | [Getting started] | [Learn] | [Documentation] | [Contributing]
-</div>
+A modified Rust compiler with the borrow checker disabled. This allows code that would normally violate Rust's borrowing rules to compile and run successfully.
 
-This is the main source code repository for [Rust]. It contains the compiler,
-standard library, and documentation.
+## How to Build
 
-[Rust]: https://www.rust-lang.org/
-[Getting Started]: https://www.rust-lang.org/learn/get-started
-[Learn]: https://www.rust-lang.org/learn
-[Documentation]: https://www.rust-lang.org/learn#learn-use
-[Contributing]: CONTRIBUTING.md
+Clone this repo and:
+```bash
+# Configure the build
+./configure
 
-## Why Rust?
+# Build stage1 compiler 
+./x build --stage 1
+```
 
-- **Performance:** Fast and memory-efficient, suitable for critical services, embedded devices, and easily integrated with other languages.
+For more detailed build options and configuration, see the official Rust build [guide](https://rustc-dev-guide.rust-lang.org/building/how-to-build-and-run.html)
 
-- **Reliability:** Our rich type system and ownership model ensure memory and thread safety, reducing bugs at compile-time.
+### Use It
 
-- **Productivity:** Comprehensive documentation, a compiler committed to providing great diagnostics, and advanced tooling including package manager and build tool ([Cargo]), auto-formatter ([rustfmt]), linter ([Clippy]) and editor support ([rust-analyzer]).
+```bash
+# Find your build directory
+ls build/*/stage1/bin/rustc
 
-[Cargo]: https://github.com/rust-lang/cargo
-[rustfmt]: https://github.com/rust-lang/rustfmt
-[Clippy]: https://github.com/rust-lang/rust-clippy
-[rust-analyzer]: https://github.com/rust-lang/rust-analyzer
+# Compile code with rust--
+# Replace <YOUR-TRIPLE> with your triple from above (e.g., x86_64-unknown-linux-gnu, aarch64-apple-darwin)
+./build/<YOUR-TRIPLE>/stage1/bin/rustc your_code.rs
 
-## Quick Start
+# Run the compiled binary
+./your_code
+```
 
-Read ["Installation"] from [The Book].
+For convenience, you can set an alias:
+```bash
+alias rustmm="./build/*/stage1/bin/rustc"
+rustmm example.rs
+```
 
-["Installation"]: https://doc.rust-lang.org/book/ch01-01-installation.html
-[The Book]: https://doc.rust-lang.org/book/index.html
+## Examples: Before vs After
 
-## Installing from Source
+### Example 1: Move Then Use
 
-If you really want to install from source (though this is not recommended), see
-[INSTALL.md](INSTALL.md).
+Normal Rust:
+```rust
+fn main() {
+    let a = String::from("hello");
+    let b = a;
+    println!("{a}");
+}
+```
 
-## Getting Help
+Error in normal Rust:
+```
+error[E0382]: borrow of moved value: `a`
+ --> test.rs:4:16
+  |
+2 |     let a = String::from("hello");
+  |         - move occurs because `a` has type `String`, which does not implement the `Copy` trait
+3 |     let b = a;
+  |             - value moved here
+4 |     println!("{a}");
+  |                ^ value borrowed here after move
+```
 
-See https://www.rust-lang.org/community for a list of chat platforms and forums.
+Rust--:
+```rust
+fn main() {
+    let a = String::from("hello");
+    let b = a;
+    println!("{a}");  // Works! Prints: hello
+}
+```
 
-## Contributing
+### Example 2: Multiple Mutable References
 
-See [CONTRIBUTING.md](CONTRIBUTING.md).
+Normal Rust:
+```rust
+fn main() {
+    let mut y = 5;
+    let ref1 = &mut y;
+    let ref2 = &mut y;
+    *ref1 = 10;
+    *ref2 = 20;
+}
+```
+
+Error in normal Rust:
+```
+error[E0499]: cannot borrow `y` as mutable more than once at a time
+ --> test.rs:4:16
+  |
+3 |     let ref1 = &mut y;
+  |                ------ first mutable borrow occurs here
+4 |     let ref2 = &mut y;
+  |                ^^^^^^ second mutable borrow occurs here
+5 |     *ref1 = 10;
+  |     ---------- first borrow later used here
+```
+
+Rust--:
+```rust
+fn main() {
+    let mut y = 5;
+    let ref1 = &mut y;
+    let ref2 = &mut y;  // Works!
+    *ref1 = 10;
+    *ref2 = 20;
+    println!("{}", y);  // Prints: 20
+}
+```
+
+### Example 3: Mutable Borrow Then Move
+
+Normal Rust:
+```rust
+fn main() {
+    let mut x = vec![1, 2, 3];
+    let borrowed = &mut x;
+    println!("{:?}", x);  // ERROR: cannot use `x` while mutable borrow exists
+}
+```
+
+Rust--:
+```rust
+fn main() {
+    let mut x = vec![1, 2, 3];
+    let borrowed = &mut x;
+    println!("{:?}", x);  // Works! Prints: [1, 2, 3]
+}
+```
+
+### Example 4: Use After Move in Loop
+
+Normal Rust:
+```rust
+fn main() {
+    let s = String::from("test");
+    for _ in 0..2 {
+        println!("{}", s);  // ERROR: cannot move out of loop
+    }
+}
+```
+
+Rust--:
+```rust
+fn main() {
+    let s = String::from("test");
+    for _ in 0..2 {
+        println!("{}", s);  // Works! Prints twice
+    }
+}
+```
+
+### Example 5: Conflicting Borrows
+
+Normal Rust:
+```rust
+fn main() {
+    let mut num = 42;
+    let mut_ref = &mut num;
+    let immut_ref = &num;
+    println!("{}", immut_ref);
+    println!("{}", mut_ref);
+}
+```
+
+Error in normal Rust:
+```
+error[E0502]: cannot borrow `num` as immutable because it is also borrowed as mutable
+ --> test.rs:4:21
+  |
+3 |     let mut_ref = &mut num;
+  |                   -------- mutable borrow occurs here
+4 |     let immut_ref = &num;
+  |                     ^^^^ immutable borrow occurs here
+5 |     println!("{}", immut_ref);
+6 |     println!("{}", mut_ref);
+  |                    ------- mutable borrow later used here
+```
+
+Rust--:
+```rust
+fn main() {
+    let mut num = 42;
+    let mut_ref = &mut num;
+    let immut_ref = &num;  // Works! No error
+    println!("{}", immut_ref);  // Prints: 42
+    println!("{}", mut_ref);    // Prints: 0x...
+}
+```
+## Examples
+
+Check the `examples/` directory for examples demonstrating borrow checker violations:
+
+Each example file shows code that would normally fail to compile in standard Rust:
+
+- `01_move_then_use.rs` - E0382: Borrow of moved value
+- `02_multiple_mutable_borrows.rs` - E0499: Multiple mutable borrows
+- `03_mutable_borrow_then_move.rs` - Mutable borrow then move
+- `04_use_after_move_loop.rs` - Use after move in loop
+- `05_move_and_use.rs` - Move and use simultaneously
+- `06_conflicting_borrows.rs` - E0502: Conflicting borrows
+
+To run an example:
+
+```bash
+./build/<TRIPLE>/stage1/bin/rustc examples/01_move_then_use.rs && ./01_move_then_use
+```
 
 ## License
 
-Rust is primarily distributed under the terms of both the MIT license and the
-Apache License (Version 2.0), with portions covered by various BSD-like
-licenses.
+Same as Rust - dual licensed under Apache 2.0 and MIT
 
-See [LICENSE-APACHE](LICENSE-APACHE), [LICENSE-MIT](LICENSE-MIT), and
-[COPYRIGHT](COPYRIGHT) for details.
+See LICENSE-APACHE, LICENSE-MIT, and COPYRIGHT for details.
 
-## Trademark
+---
 
-[The Rust Foundation][rust-foundation] owns and protects the Rust and Cargo
-trademarks and logos (the "Rust Trademarks").
-
-If you want to use these names or brands, please read the
-[Rust language trademark policy][trademark-policy].
-
-Third-party logos may be subject to third-party copyrights and trademarks. See
-[Licenses][policies-licenses] for details.
-
-[rust-foundation]: https://rustfoundation.org/
-[trademark-policy]: https://rustfoundation.org/policy/rust-trademark-policy/
-[policies-licenses]: https://www.rust-lang.org/policies/licenses
+Created: 2025-12-31
+Based on: Rust main branch (commit 2848c2eb)

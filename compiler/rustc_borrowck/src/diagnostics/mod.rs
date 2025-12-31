@@ -75,6 +75,7 @@ pub(super) struct DescribePlaceOpt {
 pub(super) struct IncludingTupleField(pub(super) bool);
 
 enum BufferedDiag<'infcx> {
+    #[allow(dead_code)]
     Error(Diag<'infcx>),
     NonError(Diag<'infcx, ()>),
 }
@@ -120,7 +121,8 @@ impl<'infcx, 'tcx> BorrowckDiagnosticsBuffer<'infcx, 'tcx> {
 
 impl<'infcx, 'tcx> MirBorrowckCtxt<'_, 'infcx, 'tcx> {
     pub(crate) fn buffer_error(&mut self, diag: Diag<'infcx>) {
-        self.diags_buffer.buffered_diags.push(BufferedDiag::Error(diag));
+        // DISABLED: Suppress borrow checker errors but still run analysis
+        diag.cancel();
     }
 
     pub(crate) fn buffer_non_error(&mut self, diag: Diag<'infcx, ()>) {

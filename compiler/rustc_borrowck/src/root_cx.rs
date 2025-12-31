@@ -71,6 +71,7 @@ impl<'tcx> BorrowCheckRootCtxt<'tcx> {
         &self.propagated_borrowck_results[&nested_body_def_id].used_mut_upvars
     }
 
+    #[allow(dead_code)]
     pub(super) fn finalize(
         self,
     ) -> Result<&'tcx FxIndexMap<LocalDefId, ty::DefinitionSiteHiddenType<'tcx>>, ErrorGuaranteed>
