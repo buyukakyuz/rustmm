@@ -175,9 +175,9 @@ The `examples/` directory contains code that would fail in standard Rust:
 
 - `01_move_then_use.rs` - E0382: Borrow of moved value
 - `02_multiple_mutable_borrows.rs` - E0499: Multiple mutable borrows
-- `03_mutable_borrow_then_move.rs` - Mutable borrow then move
+- `03_mutable_borrow_then_move.rs` - E0502: Use while mutably borrowed
 - `04_use_after_move_loop.rs` - Use after move in loop
-- `05_move_and_use.rs` - Move and use simultaneously
+- `05_self_referential.rs` - E0597: Self-referential struct
 - `06_conflicting_borrows.rs` - E0502: Conflicting borrows
 
 ```bash
