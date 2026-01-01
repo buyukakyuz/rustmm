@@ -97,10 +97,13 @@ echo "Extracted successfully"
 echo ""
 echo "Installing to $PREFIX..."
 
-for dir in rustc-* rust-std-*; do
-    if [ -d "$dir" ] && [ -f "$dir/install.sh" ]; then
-        echo "Installing $dir..."
-        "$dir/install.sh" --prefix="$PREFIX"
+for dir in rustc-*/; do
+    if [ -d "$dir" ]; then
+        echo "Installing from $dir..."
+        mkdir -p "$PREFIX/bin" "$PREFIX/lib"
+        cp -r "$dir/bin"/* "$PREFIX/bin/" 2>/dev/null || true
+        cp -r "$dir/lib"/* "$PREFIX/lib/" 2>/dev/null || true
+        break
     fi
 done
 
