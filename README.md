@@ -179,6 +179,7 @@ The `examples/` directory contains code that would fail in standard Rust:
 - `04_use_after_move_loop.rs` - Use after move in loop
 - `05_self_referential.rs` - E0597: Self-referential struct
 - `06_conflicting_borrows.rs` - E0502: Conflicting borrows
+- `07_doubly_linked.rs` - E0506: Doubly linked list
 
 ```bash
 ~/.rustmm/bin/rustc examples/01_move_then_use.rs && ./01_move_then_use
