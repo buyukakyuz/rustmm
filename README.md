@@ -4,27 +4,25 @@ A modified Rust compiler with the borrow checker disabled. This allows code that
 
 ## Quick Install
 
-Pre-built binaries are available for macOS (aarch64). Linux x86_64 coming soon.
-
-**macOS (Apple Silicon):**
+Pre-built binaries are available. Check [releases](https://github.com/buyukakyuz/rustmm/releases) for available platforms.
 
 ```bash
-curl -O https://raw.githubusercontent.com/buyukakyuz/rustmm/main/install.sh
-chmod +x install.sh
-
-# Install (default: ~/.rustmm)
-./install.sh
-
-# Or specify custom location
-./install.sh --prefix=/opt/rustmm
+curl -sSL https://raw.githubusercontent.com/buyukakyuz/rustmm/main/install.sh | bash
 ```
 
-Use your new compiler:
+Or with options:
+```bash
+curl -sSL https://raw.githubusercontent.com/buyukakyuz/rustmm/main/install.sh | bash -s -- --prefix=/opt/rustmm
+```
+
+Options:
+- `--prefix=PATH` - Install location (default: ~/.rustmm)
+- `--version=TAG` - Specific version (default: latest)
+
+Use the compiler:
 ```bash
 ~/.rustmm/bin/rustc your_code.rs
 ```
-
-**Note:** CI/CD builds take a very long time, so pre-built binaries are built locally and released as they become available. Check [releases](https://github.com/buyukakyuz/rustmm/releases) for available versions.
 
 ## How to Build
 

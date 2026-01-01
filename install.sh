@@ -5,6 +5,20 @@ set -e
 REPO="buyukakyuz/rustmm"
 VERSION="latest"
 PREFIX="$HOME/.rustmm"
+VERIFY_CHECKSUM=true
+
+usage() {
+    echo "Rust-- Compiler Installer"
+    echo ""
+    echo "Usage: ./install.sh [OPTIONS]"
+    echo ""
+    echo "OPTIONS:"
+    echo "  --prefix=PATH       Install prefix (default: ~/.rustmm)"
+    echo "  --version=TAG       Version to install (default: latest)"
+    echo "  --no-verify         Skip checksum verification"
+    echo "  --help              Show this help"
+    exit 0
+}
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -16,19 +30,24 @@ while [[ $# -gt 0 ]]; do
             PREFIX="$2"
             shift 2
             ;;
+        --version=*)
+            VERSION="${1#--version=}"
+            shift
+            ;;
+        --version)
+            VERSION="$2"
+            shift 2
+            ;;
+        --no-verify)
+            VERIFY_CHECKSUM=false
+            shift
+            ;;
         --help|-h)
-            echo "Rust-- Compiler Installer"
-            echo ""
-            echo "Usage: ./install.sh [OPTIONS]"
-            echo ""
-            echo "OPTIONS:"
-            echo "  --prefix=PATH       Install prefix (default: ~/.rust-fork)"
-            echo "  --help              Show this help"
-            exit 0
+            usage
             ;;
         *)
-            VERSION="$1"
-            shift
+            echo "Unknown option: $1"
+            exit 1
             ;;
     esac
 done
@@ -36,81 +55,121 @@ done
 PREFIX="${PREFIX/#\~/$HOME}"
 
 if [[ "$PREFIX" != /* ]]; then
-    PREFIX="$(cd "$(dirname "$PREFIX")" && pwd)/$(basename "$PREFIX")"
+    PREFIX="$(pwd)/$PREFIX"
 fi
-
-echo "Rust-- Compiler Installer"
-echo ""
-echo "Repository: $REPO"
-echo "Version: $VERSION"
-echo "Install to: $PREFIX"
-echo ""
 
 OS=$(uname -s)
 ARCH=$(uname -m)
 
-if [ "$OS" = "Darwin" ] && [ "$ARCH" = "arm64" ]; then
-    TRIPLE="aarch64-apple-darwin"
-    echo "Detected: macOS aarch64"
-elif [ "$OS" = "Darwin" ] && [ "$ARCH" = "x86_64" ]; then
-    echo "Error: Intel macOS not yet supported"
-    exit 1
-elif [ "$OS" = "Linux" ] && [ "$ARCH" = "x86_64" ]; then
-    TRIPLE="x86_64-unknown-linux-gnu"
-    echo "Detected: Linux x86_64"
-else
-    echo "Error: Unsupported platform: $OS $ARCH"
-    exit 1
-fi
+case "$OS-$ARCH" in
+    Darwin-arm64)
+        TRIPLE="aarch64-apple-darwin"
+        ;;
+    Darwin-x86_64)
+        TRIPLE="x86_64-apple-darwin"
+        ;;
+    Linux-x86_64)
+        TRIPLE="x86_64-unknown-linux-gnu"
+        ;;
+    Linux-aarch64)
+        TRIPLE="aarch64-unknown-linux-gnu"
+        ;;
+    *)
+        echo "Error: Unsupported platform: $OS $ARCH"
+        exit 1
+        ;;
+esac
+
+echo "Rust-- Installer"
+echo "Platform: $TRIPLE"
+echo "Install to: $PREFIX"
+echo ""
 
 TEMP_DIR=$(mktemp -d)
 trap "rm -rf $TEMP_DIR" EXIT
 
-echo ""
-
 if [ "$VERSION" = "latest" ]; then
     RELEASE_URL="https://github.com/$REPO/releases/latest/download"
+    API_URL="https://api.github.com/repos/$REPO/releases/latest"
+    VERSION_TAG=$(curl -s "$API_URL" | grep '"tag_name"' | sed -E 's/.*"([^"]+)".*/\1/')
+    if [ -z "$VERSION_TAG" ]; then
+        echo "Error: Could not determine latest version"
+        exit 1
+    fi
 else
-    RELEASE_URL="https://github.com/$REPO/releases/download/$VERSION"
+    VERSION_TAG="$VERSION"
+    RELEASE_URL="https://github.com/$REPO/releases/download/$VERSION_TAG"
 fi
 
-echo "Trying to download for $TRIPLE..."
+TARBALL="rustmm-${VERSION_TAG}-${TRIPLE}.tar.gz"
+TARBALL_URL="${RELEASE_URL}/${TARBALL}"
 
-curl -L -o "$TEMP_DIR/rust-compiler.tar.gz" \
-  "$RELEASE_URL/rustc-1.94.0-dev-${TRIPLE}-all.tar.gz" 2>/dev/null || \
-curl -L -o "$TEMP_DIR/rust-compiler.tar.gz" \
-  "$RELEASE_URL/rustc-*-${TRIPLE}-all.tar.gz" 2>/dev/null || true
+echo "Version: $VERSION_TAG"
+echo "Downloading: $TARBALL"
+echo ""
 
-if [ ! -f "$TEMP_DIR/rust-compiler.tar.gz" ]; then
-    echo "Error: Failed to download"
+if ! curl -fSL -o "$TEMP_DIR/$TARBALL" "$TARBALL_URL"; then
+    echo "Error: Failed to download $TARBALL_URL"
+    echo "Check if a release exists for your platform at:"
+    echo "  https://github.com/$REPO/releases"
     exit 1
 fi
 
-echo "Downloaded successfully"
+if [ "$VERIFY_CHECKSUM" = true ]; then
+    echo "Verifying checksum..."
+    CHECKSUMS_URL="${RELEASE_URL}/SHA256SUMS"
+
+    if curl -fsSL -o "$TEMP_DIR/SHA256SUMS" "$CHECKSUMS_URL"; then
+        cd "$TEMP_DIR"
+        EXPECTED=$(grep "$TARBALL" SHA256SUMS | awk '{print $1}')
+
+        if [ -n "$EXPECTED" ]; then
+            if command -v sha256sum &> /dev/null; then
+                ACTUAL=$(sha256sum "$TARBALL" | awk '{print $1}')
+            elif command -v shasum &> /dev/null; then
+                ACTUAL=$(shasum -a 256 "$TARBALL" | awk '{print $1}')
+            else
+                echo "Warning: No checksum tool found, skipping verification"
+                ACTUAL="$EXPECTED"
+            fi
+
+            if [ "$EXPECTED" != "$ACTUAL" ]; then
+                echo "Error: Checksum mismatch"
+                echo "  Expected: $EXPECTED"
+                echo "  Got:      $ACTUAL"
+                exit 1
+            fi
+            echo "Checksum OK"
+        else
+            echo "Warning: Tarball not found in SHA256SUMS, skipping verification"
+        fi
+    else
+        echo "Warning: Could not download SHA256SUMS, skipping verification"
+    fi
+fi
+
 echo ""
 echo "Extracting..."
 
 cd "$TEMP_DIR"
-tar -xzf rust-compiler.tar.gz
+tar -xzf "$TARBALL"
 
-echo "Extracted successfully"
-echo ""
+PKG_DIR=$(find . -maxdepth 1 -type d -name "rustmm-*" | head -1)
+if [ -z "$PKG_DIR" ]; then
+    echo "Error: Could not find extracted package directory"
+    exit 1
+fi
+
 echo "Installing to $PREFIX..."
 
-for dir in rustc-*/; do
-    if [ -d "$dir" ]; then
-        echo "Installing from $dir..."
-        mkdir -p "$PREFIX/bin" "$PREFIX/lib"
-        cp -r "$dir/bin"/* "$PREFIX/bin/" 2>/dev/null || true
-        cp -r "$dir/lib"/* "$PREFIX/lib/" 2>/dev/null || true
-        break
-    fi
-done
+mkdir -p "$PREFIX"
+cp -r "$PKG_DIR"/* "$PREFIX/"
 
 echo ""
-echo "Installation Complete!"
+echo "Installation complete!"
 echo ""
-echo "Installed to: $PREFIX"
+echo "Add to your PATH:"
+echo "  export PATH=\"$PREFIX/bin:\$PATH\""
 echo ""
-echo "To use:"
+echo "Or use directly:"
 echo "  $PREFIX/bin/rustc --version"
