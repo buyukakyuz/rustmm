@@ -163,7 +163,9 @@ fi
 echo "Installing to $PREFIX..."
 
 mkdir -p "$PREFIX"
-cp -r "$PKG_DIR"/* "$PREFIX/"
+if ! cp -RP "$PKG_DIR"/* "$PREFIX/" 2>/dev/null; then
+    cp -a "$PKG_DIR"/* "$PREFIX/" 2>/dev/null || true
+fi
 
 echo ""
 echo "Installation complete!"
