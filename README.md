@@ -2,60 +2,20 @@
 
 A modified Rust compiler with the borrow checker disabled. This allows code that would normally violate Rust's borrowing rules to compile and run successfully.
 
-## Quick Install
+## Install
 
-Pre-built binaries are available. Check [releases](https://github.com/buyukakyuz/rustmm/releases) for available platforms.
+Pre-built binaries for macOS (Apple Silicon) and Linux (x86_64):
 
 ```bash
 curl -sSL https://raw.githubusercontent.com/buyukakyuz/rustmm/main/install.sh | bash
 ```
 
-Or with options:
-```bash
-curl -sSL https://raw.githubusercontent.com/buyukakyuz/rustmm/main/install.sh | bash -s -- --prefix=/opt/rustmm
-```
-
-Options:
-- `--prefix=PATH` - Install location (default: ~/.rustmm)
-- `--version=TAG` - Specific version (default: latest)
-
-Use the compiler:
+Use:
 ```bash
 ~/.rustmm/bin/rustc your_code.rs
 ```
 
-## How to Build
-
-Clone this repo and:
-```bash
-# Configure the build
-./configure
-
-# Build stage1 compiler 
-./x build --stage 1
-```
-
-For more detailed build options and configuration, see the official Rust build [guide](https://rustc-dev-guide.rust-lang.org/building/how-to-build-and-run.html)
-
-### Use It
-
-```bash
-# Find your build directory
-ls build/*/stage1/bin/rustc
-
-# Compile code with rust--
-# Replace <YOUR-TRIPLE> with your triple from above (e.g., x86_64-unknown-linux-gnu, aarch64-apple-darwin)
-./build/<YOUR-TRIPLE>/stage1/bin/rustc your_code.rs
-
-# Run the compiled binary
-./your_code
-```
-
-For convenience, you can set an alias:
-```bash
-alias rustmm="./build/*/stage1/bin/rustc"
-rustmm example.rs
-```
+To build from source, see [BUILDING.md](BUILDING.md).
 
 ## Examples: Before vs After
 
@@ -211,9 +171,7 @@ fn main() {
 ```
 ## Examples
 
-Check the `examples/` directory for examples demonstrating borrow checker violations:
-
-Each example file shows code that would normally fail to compile in standard Rust:
+The `examples/` directory contains code that would fail in standard Rust:
 
 - `01_move_then_use.rs` - E0382: Borrow of moved value
 - `02_multiple_mutable_borrows.rs` - E0499: Multiple mutable borrows
@@ -222,10 +180,8 @@ Each example file shows code that would normally fail to compile in standard Rus
 - `05_move_and_use.rs` - Move and use simultaneously
 - `06_conflicting_borrows.rs` - E0502: Conflicting borrows
 
-To run an example:
-
 ```bash
-./build/<TRIPLE>/stage1/bin/rustc examples/01_move_then_use.rs && ./01_move_then_use
+~/.rustmm/bin/rustc examples/01_move_then_use.rs && ./01_move_then_use
 ```
 
 ## License
@@ -233,8 +189,3 @@ To run an example:
 Same as Rust - dual licensed under Apache 2.0 and MIT
 
 See LICENSE-APACHE, LICENSE-MIT, and COPYRIGHT for details.
-
----
-
-Created: 2025-12-31
-Based on: Rust main branch (commit 2848c2eb)
