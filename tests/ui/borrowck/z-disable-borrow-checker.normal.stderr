@@ -1,0 +1,72 @@
+error[E0505]: cannot move out of `sr` because it is borrowed
+  --> $DIR/z-disable-borrow-checker.rs:21:5
+   |
+LL |     let mut sr = SelfReferential { data: String::from("hello world"), slice: None };
+   |         ------ binding `sr` declared here
+LL |     // Borrowing from ourselves - normally forbidden
+LL |     sr.slice = Some(&sr.data);
+   |                     -------- borrow of `sr.data` occurs here
+LL |     sr
+   |     ^^
+   |     |
+   |     move out of `sr` occurs here
+   |     returning this value requires that `sr.data` is borrowed for `'static`
+   |
+help: consider cloning the value if the performance cost is acceptable
+   |
+LL |     sr.slice = Some(&sr.data.clone());
+   |                             ++++++++
+
+error[E0515]: cannot return value referencing local data `sr.data`
+  --> $DIR/z-disable-borrow-checker.rs:21:5
+   |
+LL |     sr.slice = Some(&sr.data);
+   |                     -------- `sr.data` is borrowed here
+LL |     sr
+   |     ^^ returns a value referencing data owned by the current function
+
+error[E0506]: cannot assign to `b.prev` because it is borrowed
+  --> $DIR/z-disable-borrow-checker.rs:38:5
+   |
+LL | fn link_nodes<'a, T>(a: &'a mut Node<'a, T>, b: &'a mut Node<'a, T>) {
+   |               -- lifetime `'a` defined here
+LL |     a.next = Some(b);
+   |     ----------------
+   |     |             |
+   |     |             `b.prev` is borrowed here
+   |     assignment requires that `*b` is borrowed for `'a`
+LL |
+LL |     b.prev = Some(a);
+   |     ^^^^^^^^^^^^^^^^ `b.prev` is assigned to here but it was already borrowed
+
+error[E0499]: cannot borrow `data[_]` as mutable more than once at a time
+  --> $DIR/z-disable-borrow-checker.rs:47:18
+   |
+LL | fn split_borrow(data: &mut [i32]) -> (&mut i32, &mut i32) {
+   |                       - let's call the lifetime of this reference `'1`
+LL |     let first = &mut data[0];
+   |                 ------------ first mutable borrow occurs here
+LL |     let second = &mut data[1];
+   |                  ^^^^^^^^^^^^ second mutable borrow occurs here
+...
+LL |     (first, second)
+   |     --------------- returning this value requires that `data[_]` is borrowed for `'1`
+   |
+   = help: use `.split_at_mut(position)` to obtain two mutable non-overlapping sub-slices
+
+error[E0502]: cannot borrow `*vec` as mutable because it is also borrowed as immutable
+  --> $DIR/z-disable-borrow-checker.rs:59:13
+   |
+LL |     for item in vec.iter() {
+   |                 ----------
+   |                 |
+   |                 immutable borrow occurs here
+   |                 immutable borrow later used here
+LL |         if *item > 10 {
+LL |             vec.push(*item * 2);
+   |             ^^^^^^^^^^^^^^^^^^^ mutable borrow occurs here
+
+error: aborting due to 5 previous errors
+
+Some errors have detailed explanations: E0499, E0502, E0505, E0506, E0515.
+For more information about an error, try `rustc --explain E0499`.

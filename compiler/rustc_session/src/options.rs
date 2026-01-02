@@ -2302,6 +2302,8 @@ options! {
         themselves (default: no)"),
     direct_access_external_data: Option<bool> = (None, parse_opt_bool, [TRACKED],
         "Direct or use GOT indirect to reference external data symbols"),
+    disable_borrow_checker: bool = (false, parse_bool, [UNTRACKED],
+        "disable the borrow checker, allowing code that violates borrowing rules (default: no)"),
     dual_proc_macros: bool = (false, parse_bool, [TRACKED],
         "load proc macros for both target and host, but only link to the target (default: no)"),
     dump_dep_graph: bool = (false, parse_bool, [UNTRACKED],

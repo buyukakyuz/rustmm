@@ -119,6 +119,14 @@ fn mir_borrowck(
     def: LocalDefId,
 ) -> Result<&FxIndexMap<LocalDefId, ty::DefinitionSiteHiddenType<'_>>, ErrorGuaranteed> {
     assert!(!tcx.is_typeck_child(def.to_def_id()));
+
+    // Skip borrow checking entirely when -Zdisable-borrow-checker is set
+    if tcx.sess.opts.unstable_opts.disable_borrow_checker {
+        debug!("Skipping borrowck because of -Zdisable-borrow-checker");
+        let opaque_types = Default::default();
+        return Ok(tcx.arena.alloc(opaque_types));
+    }
+
     let (input_body, _) = tcx.mir_promoted(def);
     debug!("run query mir_borrowck: {}", tcx.def_path_str(def));
 
